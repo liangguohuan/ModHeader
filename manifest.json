@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "ModHeader",
+  "version": "1.0.0",
+  "description": "Modify HTTP request and response headers easily. Supports multiple profiles, URL filters, and request/response header operations.",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "ModHeader"
+  }
+}

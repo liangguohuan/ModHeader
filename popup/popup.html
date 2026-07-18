@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ModHeader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- Top header bar -->
+    <div class="app-header">
+      <div class="brand">
+        <div class="brand-icon">M</div>
+        <span class="brand-name">ModHeader</span>
+      </div>
+      <div class="header-right">
+        <span class="rule-badge" id="ruleBadge" title="Active rules"></span>
+        <label class="toggle" id="globalToggleLabel" title="Enable / Disable all">
+          <input type="checkbox" id="globalEnabled">
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Profile tabs row -->
+    <div class="profiles-bar">
+      <div class="profiles-scroll">
+        <div class="profiles-tabs" id="profilesTabs"></div>
+      </div>
+      <button class="btn-icon-round" id="addProfile" title="New profile">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Profile enabled row -->
+    <div class="profile-enabled-bar" id="profileEnabledBar">
+      <label class="toggle-row">
+        <label class="toggle toggle-sm">
+          <input type="checkbox" id="profileEnabled">
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+        </label>
+        <span id="profileEnabledLabel">Profile enabled</span>
+      </label>
+      <button class="btn-danger-sm" id="deleteProfile" title="Delete profile">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M1 3h10M4 3V2h4v1M2 3l.8 7.2A1 1 0 003.8 11h4.4a1 1 0 001-.8L10 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Delete profile
+      </button>
+    </div>
+
+    <!-- Section tabs -->
+    <div class="section-tabs" id="sectionTabs">
+      <button class="section-tab active" data-section="requestHeaders">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 3h10M1 6h7M1 9h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Request
+      </button>
+      <button class="section-tab" data-section="responseHeaders">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M11 3H1M11 6H4M11 9H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Response
+      </button>
+      <button class="section-tab" data-section="urlFilters">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 6h6M6 3c-1 1-1.5 2-1.5 3s.5 2 1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        URL Filters
+      </button>
+    </div>
+
+    <!-- Sections -->
+    <div class="section-content" id="sectionContent">
+
+      <!-- Request Headers -->
+      <div class="section active" id="section-requestHeaders">
+        <div class="headers-list" id="requestHeadersList"></div>
+        <div class="section-footer">
+          <button class="btn-add" id="addRequestHeader">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add Request Header
+          </button>
+        </div>
+      </div>
+
+      <!-- Response Headers -->
+      <div class="section" id="section-responseHeaders">
+        <div class="headers-list" id="responseHeadersList"></div>
+        <div class="section-footer">
+          <button class="btn-add" id="addResponseHeader">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add Response Header
+          </button>
+        </div>
+      </div>
+
+      <!-- URL Filters -->
+      <div class="section" id="section-urlFilters">
+        <div class="url-filters-hint">
+          Leave empty to apply to all URLs. Patterns: <code>||example.com^</code> or <code>*://api.site.com/*</code>
+        </div>
+        <div class="headers-list" id="urlFiltersList"></div>
+        <div class="section-footer">
+          <button class="btn-add" id="addUrlFilter">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add URL Filter
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer toolbar -->
+    <div class="app-footer">
+      <button class="btn-footer" id="openInTab" title="Open the editor in a full-width new tab">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M5.5 1.5h-3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 1.5h3.5V5M11.5 1.5L6.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Open in tab
+      </button>
+      <button class="btn-footer" id="cloneProfile" title="Duplicate current profile">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M8.5 3.5V2.5A1 1 0 007.5 1.5H2.5a1 1 0 00-1 1v5a1 1 0 001 1h1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Clone
+      </button>
+      <button class="btn-footer" id="exportBtn" title="Export all profiles to a file">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v7.5M6.5 8.5L4 6M6.5 8.5L9 6M2 10.5h9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export
+      </button>
+      <button class="btn-footer" id="importBtn" title="Import profiles from a file">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 8.5V1M6.5 1L4 3.5M6.5 1L9 3.5M2 10.5h9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Import
+      </button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+
+    <!-- Rename modal -->
+    <div class="modal-overlay" id="renameModal">
+      <div class="modal">
+        <div class="modal-title">Rename Profile</div>
+        <input type="text" class="modal-input" id="renameInput" placeholder="Profile name">
+        <div class="modal-actions">
+          <button class="btn-secondary" id="renameCancelBtn">Cancel</button>
+          <button class="btn-primary" id="renameConfirmBtn">Rename</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
