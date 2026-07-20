@@ -128,6 +128,10 @@ async function setIcon(enabled) {
     const sizes = [16, 32, 48, 128];
     const imageData = {};
     for (const size of sizes) {
+      const response = await fetch(chrome.runtime.getURL(`icon${size}.png`));
+      const blob = await response.blob();
+      const img = await createImageBitmap(blob);
+
       let canvas;
       if (typeof OffscreenCanvas !== 'undefined') {
         canvas = new OffscreenCanvas(size, size);
@@ -138,35 +142,21 @@ async function setIcon(enabled) {
       } else {
         continue;
       }
+
       const ctx = canvas.getContext('2d');
-      const r = size * 0.12;
-      const color = enabled ? '#3b82f6' : '#64748b';
+      ctx.clearRect(0, 0, size, size);
 
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.moveTo(r, 0);
-      ctx.lineTo(size - r, 0);
-      ctx.quadraticCurveTo(size, 0, size, r);
-      ctx.lineTo(size, size - r);
-      ctx.quadraticCurveTo(size, size, size - r, size);
-      ctx.lineTo(r, size);
-      ctx.quadraticCurveTo(0, size, 0, size - r);
-      ctx.lineTo(0, r);
-      ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.closePath();
-      ctx.fill();
+      if (!enabled) {
+        ctx.filter = 'grayscale(100%)';
+        ctx.globalAlpha = 0.6;
+      }
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.round(size * 0.65)}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('M', size / 2, size * 0.52);
-
+      ctx.drawImage(img, 0, 0, size, size);
       imageData[size] = ctx.getImageData(0, 0, size, size);
     }
     await chrome.action.setIcon({ imageData });
   } catch (e) {
-    // OffscreenCanvas unavailable in some contexts
+    console.error('[ModHeader] setIcon error:', e);
   }
 }
 
