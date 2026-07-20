@@ -202,6 +202,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupStorageSync();
   render();
   updateRuleBadge();
+
+  // Highlight import button if opened specifically for importing (e.g. from Firefox popup)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('action') === 'import') {
+    const importBtn = document.getElementById('importBtn');
+    if (importBtn) {
+      importBtn.classList.add('pulse-highlight');
+      toast('Please click the highlighted Import button to select your file');
+      importBtn.addEventListener('click', () => {
+        importBtn.classList.remove('pulse-highlight');
+      }, { once: true });
+    }
+  }
 });
 
 // ─── Storage sync (popup ↔ tab editor) ─────────────────────────────────────
@@ -316,7 +329,16 @@ function setupStaticListeners() {
 
   // Import
   document.getElementById('importBtn').addEventListener('click', () => {
-    document.getElementById('importFile').click();
+    const isFirefox = navigator.userAgent.includes('Firefox');
+    const isTabMode = new URLSearchParams(window.location.search).get('mode') === 'tab' || window.innerWidth > 600;
+    if (isFirefox && !isTabMode) {
+      toast('Opening tab to import profiles...');
+      setTimeout(() => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('popup/popup.html?mode=tab&action=import') });
+      }, 300);
+    } else {
+      document.getElementById('importFile').click();
+    }
   });
   document.getElementById('importFile').addEventListener('change', importProfiles);
 
