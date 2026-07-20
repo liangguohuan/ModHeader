@@ -17,18 +17,27 @@
 - **实时规则统计** — Header 栏显示当前生效的规则数量
 - **深色主题** — 精心设计的深色 UI，保护眼睛
 
-## 安装
+## 构建与安装
+
+为了在 Chrome 和 Firefox 中均保持零警告警告，推荐通过脚本为各浏览器构建专属目录包：
+
+```bash
+node build.js
+```
+运行后会在项目下生成 `dist/` 文件夹：
+- `dist/chrome/` — Chrome 专属版本（无 `'background.scripts'` 警告）
+- `dist/firefox/` — Firefox 专属版本
 
 ### Chrome 浏览器
 1. 打开 Chrome，访问 `chrome://extensions/`
 2. 开启右上角的 **开发者模式**
 3. 点击 **加载已解压的扩展程序**
-4. 选择本项目根目录（包含 `manifest.json` 的文件夹）
+4. 选择本项目下的 `dist/chrome` 目录
 
 ### Firefox 浏览器
 1. 打开 Firefox，访问 `about:debugging#/runtime/this-firefox`
-2. 点击 **Load Temporary Add-on...**（加载临时附加组件...）
-3. 选择本项目根目录下的 `manifest.json` 文件
+2. 点击右上角的 **Load Temporary Add-on...**（加载临时附加组件...）
+3. 选择本项目下的 `dist/firefox/manifest.json` 文件
 
 ## 使用方法
 
