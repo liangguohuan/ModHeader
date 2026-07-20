@@ -26,20 +26,31 @@ function isAscii(str) {
   return /^[\x00-\x7F]*$/.test(str);
 }
 
+// Flag to prevent the storage‑change listener from re-rendering while this
+// popup is the one writing to storage (which would destroy focused inputs).
+let _isSaving = false;
+
 function debounceSave() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(persistData, 150);
 }
 
 async function persistData() {
-  await chrome.storage.local.set({ modheader: data });
-  // Popup is the single apply-driver: background applies rules and returns the
-  // accurate count in one round-trip, so the badge can't read a stale value.
+  _isSaving = true;
   try {
-    const res = await chrome.runtime.sendMessage({ type: 'APPLY', data });
-    setRuleBadge(res && res.ruleCount);
-  } catch (e) {
-    // background not ready yet
+    await chrome.storage.local.set({ modheader: data });
+    // Popup is the single apply-driver: background applies rules and returns the
+    // accurate count in one round-trip, so the badge can't read a stale value.
+    try {
+      const res = await chrome.runtime.sendMessage({ type: 'APPLY', data });
+      setRuleBadge(res && res.ruleCount);
+    } catch (e) {
+      // background not ready yet
+    }
+  } finally {
+    // Reset after the microtask queue flushes so the onChanged event (which
+    // fires synchronously in the same turn) still sees the flag as true.
+    setTimeout(() => { _isSaving = false; }, 0);
   }
 }
 
@@ -220,6 +231,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─── Storage sync (popup ↔ tab editor) ─────────────────────────────────────
 function setupStorageSync() {
   chrome.storage.onChanged.addListener((changes) => {
+    // Ignore changes that this popup itself just wrote – re-rendering would
+    // destroy the focused input element and the user would lose their cursor.
+    if (_isSaving) return;
+
     if (changes.modheader && changes.modheader.newValue) {
       data = changes.modheader.newValue;
       if (!data.activeProfileId && data.profiles.length > 0) {
