@@ -31,7 +31,7 @@ function copyDir(src, dest) {
 }
 
 // Copy source files to both dist folders
-const filesToCopy = ['background.js', 'icon16.png', 'icon48.png', 'icon128.png', 'popup'];
+const filesToCopy = ['background.js', 'icon16.png', 'icon32.png', 'icon48.png', 'icon128.png', 'popup'];
 filesToCopy.forEach(item => {
   const srcPath = path.join(srcDir, item);
   if (!fs.existsSync(srcPath)) return;

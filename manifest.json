@@ -5,6 +5,7 @@
   "description": "Modify HTTP request and response headers easily. Supports multiple profiles, URL filters, and request/response header operations.",
   "icons": {
     "16": "icon16.png",
+    "32": "icon32.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
@@ -22,6 +23,7 @@
     "default_title": "ModHeader",
     "default_icon": {
       "16": "icon16.png",
+      "32": "icon32.png",
       "48": "icon48.png",
       "128": "icon128.png"
     }

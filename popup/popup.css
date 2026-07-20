@@ -64,15 +64,9 @@ body {
 .brand-icon {
   width: 28px;
   height: 28px;
-  background: var(--primary);
   border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 16px;
-  color: white;
-  letter-spacing: -0.5px;
+  display: block;
+  object-fit: contain;
   box-shadow: 0 0 12px var(--primary-glow);
 }
 
@@ -858,7 +852,6 @@ body {
   .brand-icon {
     width: 32px;
     height: 32px;
-    font-size: 18px;
   }
 
   .profile-enabled-bar {
