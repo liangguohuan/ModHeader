@@ -3,16 +3,33 @@
   "name": "ModHeader",
   "version": "1.0.0",
   "description": "Modify HTTP request and response headers easily. Supports multiple profiles, URL filters, and request/response header operations.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": [
     "declarativeNetRequest",
     "storage"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "ModHeader"
+    "default_title": "ModHeader",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "modheader-firefox@liangguohuan.github.io",
+      "strict_min_version": "113.0"
+    }
   }
 }

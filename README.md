@@ -1,8 +1,9 @@
 # ModHeader
 
-一个轻量级的 Chrome 扩展（Manifest V3），用于便捷地修改 HTTP 请求和响应头。支持多 Profile、URL 过滤器以及多种 Header 操作方式。
+一个轻量级的 Chrome 和 Firefox 浏览器扩展（Manifest V3），用于便捷地修改 HTTP 请求和响应头。支持多 Profile、URL 过滤器以及多种 Header 操作方式。
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)
+![Firefox Extension](https://img.shields.io/badge/Firefox-Extension-orange)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 
 ## 功能特性
@@ -18,10 +19,16 @@
 
 ## 安装
 
+### Chrome 浏览器
 1. 打开 Chrome，访问 `chrome://extensions/`
 2. 开启右上角的 **开发者模式**
 3. 点击 **加载已解压的扩展程序**
 4. 选择本项目根目录（包含 `manifest.json` 的文件夹）
+
+### Firefox 浏览器
+1. 打开 Firefox，访问 `about:debugging#/runtime/this-firefox`
+2. 点击 **Load Temporary Add-on...**（加载临时附加组件...）
+3. 选择本项目根目录下的 `manifest.json` 文件
 
 ## 使用方法
 

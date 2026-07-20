@@ -128,7 +128,16 @@ async function setIcon(enabled) {
     const sizes = [16, 32, 48, 128];
     const imageData = {};
     for (const size of sizes) {
-      const canvas = new OffscreenCanvas(size, size);
+      let canvas;
+      if (typeof OffscreenCanvas !== 'undefined') {
+        canvas = new OffscreenCanvas(size, size);
+      } else if (typeof document !== 'undefined' && document.createElement) {
+        canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+      } else {
+        continue;
+      }
       const ctx = canvas.getContext('2d');
       const r = size * 0.12;
       const color = enabled ? '#3b82f6' : '#64748b';
