@@ -384,6 +384,9 @@ function renderGlobalToggle() {
   document.querySelector('.app').classList.toggle('disabled', !data.enabled);
 }
 
+// ─── Profile tab drag-and-drop state ─────────────────────────────────────────
+let _dragSrcId = null;
+
 function renderProfileTabs() {
   const container = document.getElementById('profilesTabs');
   container.innerHTML = '';
@@ -392,7 +395,18 @@ function renderProfileTabs() {
     const tab = document.createElement('button');
     tab.className = 'profile-tab' + (profile.id === data.activeProfileId ? ' active' : '') + (!profile.enabled ? ' disabled' : '');
     tab.dataset.id = profile.id;
+    tab.draggable = true;
     tab.innerHTML = `
+      <span class="profile-tab-drag-handle" title="Drag to reorder">
+        <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
+          <circle cx="2" cy="2" r="1.2" fill="currentColor"/>
+          <circle cx="6" cy="2" r="1.2" fill="currentColor"/>
+          <circle cx="2" cy="6" r="1.2" fill="currentColor"/>
+          <circle cx="6" cy="6" r="1.2" fill="currentColor"/>
+          <circle cx="2" cy="10" r="1.2" fill="currentColor"/>
+          <circle cx="6" cy="10" r="1.2" fill="currentColor"/>
+        </svg>
+      </span>
       <span class="profile-tab-dot"></span>
       <span class="profile-tab-name">${escHtml(profile.name)}</span>
       <span class="profile-tab-rename" title="Rename">
@@ -402,6 +416,7 @@ function renderProfileTabs() {
       </span>
     `;
 
+    // Click: switch profile or open rename modal
     tab.addEventListener('click', (e) => {
       if (e.target.closest('.profile-tab-rename')) {
         openRenameModal(profile.id, profile.name);
@@ -411,6 +426,67 @@ function renderProfileTabs() {
       renderProfileTabs();
       renderProfileBar();
       renderSection();
+    });
+
+    // Drag events
+    tab.addEventListener('dragstart', (e) => {
+      _dragSrcId = profile.id;
+      tab.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      // Required for Firefox
+      e.dataTransfer.setData('text/plain', profile.id);
+    });
+
+    tab.addEventListener('dragend', () => {
+      _dragSrcId = null;
+      // Clean up all drag indicators
+      document.querySelectorAll('.profile-tab').forEach(t => {
+        t.classList.remove('dragging', 'drag-over-left', 'drag-over-right');
+      });
+    });
+
+    tab.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!_dragSrcId || _dragSrcId === profile.id) return;
+
+      // Determine if cursor is on the left or right half of this tab
+      const rect = tab.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      const isLeft = e.clientX < midX;
+
+      // Clear indicators on all tabs then set on this one
+      document.querySelectorAll('.profile-tab').forEach(t => {
+        t.classList.remove('drag-over-left', 'drag-over-right');
+      });
+      tab.classList.add(isLeft ? 'drag-over-left' : 'drag-over-right');
+    });
+
+    tab.addEventListener('dragleave', () => {
+      tab.classList.remove('drag-over-left', 'drag-over-right');
+    });
+
+    tab.addEventListener('drop', (e) => {
+      e.preventDefault();
+      tab.classList.remove('drag-over-left', 'drag-over-right');
+      if (!_dragSrcId || _dragSrcId === profile.id) return;
+
+      const srcIdx = data.profiles.findIndex(p => p.id === _dragSrcId);
+      const dstIdx = data.profiles.findIndex(p => p.id === profile.id);
+      if (srcIdx === -1 || dstIdx === -1) return;
+
+      // Determine insert position (left or right of target)
+      const rect = tab.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      const insertAfter = e.clientX >= midX;
+
+      const [moved] = data.profiles.splice(srcIdx, 1);
+      // After removal, recalculate destination index
+      const newDstIdx = data.profiles.findIndex(p => p.id === profile.id);
+      data.profiles.splice(insertAfter ? newDstIdx + 1 : newDstIdx, 0, moved);
+
+      debounceSave();
+      renderProfileTabs();
     });
 
     container.appendChild(tab);
