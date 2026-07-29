@@ -128,7 +128,7 @@ async function setIcon(enabled) {
     const sizes = [16, 32, 48, 128];
     const imageData = {};
     for (const size of sizes) {
-      const response = await fetch(chrome.runtime.getURL(`icon${size}.png`));
+      const response = await fetch(chrome.runtime.getURL(`icons/icon${size}.png`));
       const blob = await response.blob();
       const img = await createImageBitmap(blob);
 
