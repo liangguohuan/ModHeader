@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00E5FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2979FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#651FFF;stop-opacity:1" />
+    </linearGradient>
+    <filter id="drop-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  <!-- Clean, flat rounded square icon base -->
+  <rect x="0" y="0" width="128" height="128" rx="28" fill="url(#blue-grad)" />
+
+  <!-- Stylized white letter M in the center, perfectly centered -->
+  <path d="M20 96 V32 h14 l30 40 30-40 h14 v64 h-14 V56 l-26 36 h-8 l-26-36 v40 z" fill="#ffffff" filter="url(#drop-shadow)" />
+</svg>
