@@ -552,9 +552,13 @@ function renderSection() {
 // listeners (scroll) can dismiss it regardless of which row owns it.
 let _closeAutocomplete = null;
 
-// The dropdown is position:fixed — any scroll would detach it from its input.
-document.addEventListener('scroll', () => {
-  if (_closeAutocomplete) _closeAutocomplete();
+// The dropdown is position:fixed — any page scroll would detach it from its
+// input. Scrolling INSIDE the dropdown (its own scrollbar) must not close it.
+document.addEventListener('scroll', (e) => {
+  if (!_closeAutocomplete) return;
+  const t = e.target;
+  if (t instanceof Element && t.closest('.header-autocomplete')) return;
+  _closeAutocomplete();
 }, true);
 
 function attachHeaderAutocomplete(input, type, nextInput) {
@@ -644,7 +648,16 @@ function attachHeaderAutocomplete(input, type, nextInput) {
     activeIdx = idx;
     const items = dropdown.querySelectorAll('.header-autocomplete-item');
     items.forEach((el, i) => el.classList.toggle('active', i === idx));
-    if (idx >= 0 && items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+    // Keep the highlighted item visible by scrolling the dropdown itself.
+    // scrollIntoView() would also scroll the popup body, whose scroll event
+    // dismisses the dropdown.
+    const el = items[idx];
+    if (!el) return;
+    const top = el.offsetTop, bottom = top + el.offsetHeight;
+    if (top < dropdown.scrollTop) dropdown.scrollTop = top;
+    else if (bottom > dropdown.scrollTop + dropdown.clientHeight) {
+      dropdown.scrollTop = bottom - dropdown.clientHeight;
+    }
   }
 
   function commit(name) {
@@ -662,7 +675,11 @@ function attachHeaderAutocomplete(input, type, nextInput) {
   });
   input.addEventListener('keydown', (e) => {
     if (!dropdown) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); renderDropdown(); }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = 0; // open with the first item highlighted
+        renderDropdown();
+      }
       return;
     }
     if (e.key === 'ArrowDown') {
