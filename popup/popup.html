@@ -67,6 +67,10 @@
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M11 3H1M11 6H4M11 9H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Response
       </button>
+      <button class="section-tab" data-section="queryParams">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 7.5l3.5-3 1.5 2 2-3.5L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Params
+      </button>
       <button class="section-tab" data-section="urlFilters">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 6h6M6 3c-1 1-1.5 2-1.5 3s.5 2 1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         URL Filters
@@ -94,6 +98,20 @@
           <button class="btn-add" id="addResponseHeader">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             Add Response Header
+          </button>
+        </div>
+      </div>
+
+      <!-- Query Params -->
+      <div class="section" id="section-queryParams">
+        <div class="url-filters-hint">
+          Override URL query parameters on requests. Set: add or replace - Replace: only if already present - Remove: drop the param.
+        </div>
+        <div class="headers-list" id="queryParamsList"></div>
+        <div class="section-footer">
+          <button class="btn-add" id="addQueryParam">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add Query Param
           </button>
         </div>
       </div>

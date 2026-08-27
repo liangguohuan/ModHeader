@@ -122,11 +122,16 @@ function createProfile(name) {
     enabled: true,
     urlFilters: [],
     requestHeaders: [],
-    responseHeaders: []
+    responseHeaders: [],
+    queryParams: []
   };
 }
 
 function createHeader() {
+  return { id: generateId(), name: '', value: '', operation: 'set', enabled: true };
+}
+
+function createParam() {
   return { id: generateId(), name: '', value: '', operation: 'set', enabled: true };
 }
 
@@ -136,7 +141,7 @@ function createFilter() {
 
 // Give every header/filter in a profile a fresh id (used when cloning/importing).
 function reassignIds(profile) {
-  for (const key of ['requestHeaders', 'responseHeaders', 'urlFilters']) {
+  for (const key of ['requestHeaders', 'responseHeaders', 'queryParams', 'urlFilters']) {
     if (Array.isArray(profile[key])) {
       profile[key].forEach(item => { item.id = generateId(); });
     }
@@ -167,6 +172,7 @@ function normalizeProfile(raw) {
     enabled: raw.enabled !== false,
     requestHeaders: [],
     responseHeaders: [],
+    queryParams: [],
     urlFilters: []
   };
   const mapHeader = (h) => ({
@@ -176,6 +182,13 @@ function normalizeProfile(raw) {
     operation: ['set', 'append', 'remove'].includes(h.operation) ? h.operation : 'set',
     enabled: h.enabled !== false
   });
+  const mapParam = (p) => ({
+    id: generateId(),
+    name: typeof p.name === 'string' ? p.name : '',
+    value: typeof p.value === 'string' ? p.value : '',
+    operation: ['set', 'replace', 'remove'].includes(p.operation) ? p.operation : 'set',
+    enabled: p.enabled !== false
+  });
   const mapFilter = (f) => ({
     id: generateId(),
     value: typeof f.value === 'string' ? f.value : '',
@@ -184,6 +197,7 @@ function normalizeProfile(raw) {
   });
   if (Array.isArray(raw.requestHeaders)) profile.requestHeaders = raw.requestHeaders.map(mapHeader);
   if (Array.isArray(raw.responseHeaders)) profile.responseHeaders = raw.responseHeaders.map(mapHeader);
+  if (Array.isArray(raw.queryParams)) profile.queryParams = raw.queryParams.map(mapParam);
   if (Array.isArray(raw.urlFilters)) profile.urlFilters = raw.urlFilters.map(mapFilter);
   return profile;
 }
@@ -219,11 +233,19 @@ function importProfiles(e) {
   reader.readAsText(file);
 }
 
+// Backfill queryParams on profiles saved before this feature existed.
+function ensureQueryParamArrays() {
+  for (const profile of data.profiles) {
+    if (!Array.isArray(profile.queryParams)) profile.queryParams = [];
+  }
+}
+
 // ─── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   const result = await chrome.storage.local.get('modheader');
   if (result.modheader) {
     data = result.modheader;
+    ensureQueryParamArrays();
   } else {
     const profile = createProfile('Profile 1');
     data = { enabled: true, profiles: [profile], activeProfileId: profile.id };
@@ -262,6 +284,7 @@ function setupStorageSync() {
 
     if (changes.modheader && changes.modheader.newValue) {
       data = changes.modheader.newValue;
+      ensureQueryParamArrays();
       if (!data.activeProfileId && data.profiles.length > 0) {
         data.activeProfileId = data.profiles[0].id;
       }
@@ -332,6 +355,14 @@ function setupStaticListeners() {
     if (!profile) return;
     profile.responseHeaders.push(createHeader());
     renderHeaderList('responseHeaders');
+    debounceSave();
+  });
+
+  document.getElementById('addQueryParam').addEventListener('click', () => {
+    const profile = getActiveProfile();
+    if (!profile) return;
+    profile.queryParams.push(createParam());
+    renderParamList();
     debounceSave();
   });
 
@@ -544,6 +575,7 @@ function renderSection() {
 
   if (activeSection === 'requestHeaders') renderHeaderList('requestHeaders');
   else if (activeSection === 'responseHeaders') renderHeaderList('responseHeaders');
+  else if (activeSection === 'queryParams') renderParamList();
   else if (activeSection === 'urlFilters') renderUrlFilters();
 }
 
@@ -846,7 +878,146 @@ function buildHeaderRow(type, header) {
   return row;
 }
 
-// ─── URL filters ──────────────────────────────────────────────────────────────
+// ─── Query params ──────────────────────────────────────────────────────────
+function renderParamList() {
+  const profile = getActiveProfile();
+  const list = document.getElementById('queryParamsList');
+  if (!list || !profile) return;
+
+  list.innerHTML = '';
+
+  if (profile.queryParams.length === 0) {
+    list.appendChild(emptyState('No query params yet. Click "Add" below.'));
+    return;
+  }
+
+  for (const param of profile.queryParams) {
+    list.appendChild(buildParamRow(param));
+  }
+}
+
+// Query param names/values must survive being embedded in a URL query string.
+function isValidParamText(str) {
+  return isAscii(str) && !/[&#\s]/.test(str);
+}
+
+function buildParamRow(param) {
+  const row = document.createElement('div');
+  row.className = 'header-row' + (param.enabled ? '' : ' disabled');
+  row.dataset.id = param.id;
+
+  // Toggle
+  const toggleLabel = document.createElement('label');
+  toggleLabel.className = 'toggle toggle-sm header-toggle';
+  const toggleInput = document.createElement('input');
+  toggleInput.type = 'checkbox';
+  toggleInput.checked = param.enabled;
+  const toggleTrack = document.createElement('span');
+  toggleTrack.className = 'toggle-track';
+  const toggleThumb = document.createElement('span');
+  toggleThumb.className = 'toggle-thumb';
+  toggleTrack.appendChild(toggleThumb);
+  toggleLabel.appendChild(toggleInput);
+  toggleLabel.appendChild(toggleTrack);
+
+  toggleInput.addEventListener('change', () => {
+    param.enabled = toggleInput.checked;
+    row.classList.toggle('disabled', !param.enabled);
+    debounceSave();
+  });
+
+  // Name input
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'input-name';
+  nameInput.placeholder = 'Param name';
+  nameInput.value = param.name;
+  nameInput.autocomplete = 'off';
+  nameInput.spellcheck = false;
+
+  function validateName(val) {
+    const invalid = val && !isValidParamText(val);
+    nameInput.classList.toggle('input-error', invalid);
+    nameInput.title = invalid ? 'Param name must be ASCII and cannot contain spaces, & or #' : '';
+  }
+  validateName(param.name);
+
+  nameInput.addEventListener('input', () => {
+    param.name = nameInput.value;
+    validateName(nameInput.value);
+    debounceSave();
+  });
+
+  // Value input
+  const valueInput = document.createElement('input');
+  valueInput.type = 'text';
+  valueInput.className = 'input-value';
+  valueInput.placeholder = 'Param value';
+  valueInput.value = param.value || '';
+  if (param.operation === 'remove') {
+    valueInput.disabled = true;
+    valueInput.placeholder = '(not used)';
+  }
+  function validateValue(val) {
+    const invalid = val && !isValidParamText(val);
+    valueInput.classList.toggle('input-error', invalid);
+    valueInput.title = invalid ? 'Param value must be ASCII and cannot contain spaces, & or #' : '';
+  }
+  validateValue(param.value || '');
+
+  valueInput.addEventListener('input', () => {
+    param.value = valueInput.value;
+    validateValue(valueInput.value);
+    debounceSave();
+  });
+
+  // Operation select
+  const opSelect = document.createElement('select');
+  opSelect.className = 'select-op';
+  const ops = [
+    ['set', 'Set'],
+    ['replace', 'Replace'],
+    ['remove', 'Remove']
+  ];
+  opSelect.title = 'Set: add or replace - Replace: only when the param already exists - Remove: drop the param';
+  ops.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    if (param.operation === val) opt.selected = true;
+    opSelect.appendChild(opt);
+  });
+  opSelect.addEventListener('change', () => {
+    param.operation = opSelect.value;
+    const isRemove = opSelect.value === 'remove';
+    valueInput.disabled = isRemove;
+    valueInput.placeholder = isRemove ? '(not used)' : 'Param value';
+    debounceSave();
+  });
+
+  // Delete
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn-row-delete';
+  deleteBtn.title = 'Remove';
+  deleteBtn.innerHTML = '&times;';
+  deleteBtn.addEventListener('click', () => {
+    const profile = getActiveProfile();
+    if (!profile) return;
+    profile.queryParams = profile.queryParams.filter(p => p.id !== param.id);
+    renderParamList();
+    debounceSave();
+  });
+
+  row.appendChild(toggleLabel);
+  row.appendChild(nameInput);
+  row.appendChild(valueInput);
+  row.appendChild(opSelect);
+  row.appendChild(deleteBtn);
+
+  return row;
+}
+
+
 function renderUrlFilters() {
   const profile = getActiveProfile();
   const list = document.getElementById('urlFiltersList');

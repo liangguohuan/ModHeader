@@ -22,7 +22,8 @@ function createDefaultData() {
       enabled: true,
       urlFilters: [],
       requestHeaders: [],
-      responseHeaders: []
+      responseHeaders: [],
+      queryParams: []
     }],
     activeProfileId: profileId
   };
@@ -35,6 +36,34 @@ function isValidHeaderName(name) {
 
 function isAscii(str) {
   return /^[\x00-\x7F]*$/.test(str);
+}
+
+// A rule action can only be ONE type: modifyHeaders OR redirect. Profiles with
+// both headers and query params therefore emit two rules per URL filter.
+function buildQueryTransform(profile) {
+  const params = (profile.queryParams || []).filter(p => p.enabled && p.name && p.name.trim());
+  if (params.length === 0) return null;
+
+  const queryTransform = {};
+  const removeParams = params
+    .filter(p => p.operation === 'remove')
+    .map(p => p.name.trim());
+  if (removeParams.length > 0) queryTransform.removeParams = removeParams;
+
+  const addOrReplaceParams = params
+    .filter(p => p.operation !== 'remove')
+    .map(p => {
+      const kv = {
+        key: p.name.trim(),
+        // Non-ASCII values would produce an invalid URL query
+        value: isAscii(p.value || '') ? (p.value || '') : ''
+      };
+      if (p.operation === 'replace') kv.replaceOnly = true;
+      return kv;
+    });
+  if (addOrReplaceParams.length > 0) queryTransform.addOrReplaceParams = addOrReplaceParams;
+
+  return Object.keys(queryTransform).length > 0 ? queryTransform : null;
 }
 
 function buildRules(data) {
@@ -62,11 +91,18 @@ function buildRules(data) {
         return rule;
       });
 
-    if (reqHeaders.length === 0 && resHeaders.length === 0) continue;
+    const queryTransform = buildQueryTransform(profile);
 
-    const action = { type: 'modifyHeaders' };
-    if (reqHeaders.length > 0) action.requestHeaders = reqHeaders;
-    if (resHeaders.length > 0) action.responseHeaders = resHeaders;
+    if (reqHeaders.length === 0 && resHeaders.length === 0 && !queryTransform) continue;
+
+    const hasHeaders = reqHeaders.length > 0 || resHeaders.length > 0;
+    const headerAction = { type: 'modifyHeaders' };
+    if (reqHeaders.length > 0) headerAction.requestHeaders = reqHeaders;
+    if (resHeaders.length > 0) headerAction.responseHeaders = resHeaders;
+
+    const paramAction = queryTransform
+      ? { type: 'redirect', redirect: { transform: { queryTransform } } }
+      : null;
 
     const enabledFilters = (profile.urlFilters || []).filter(f => {
       if (!f.enabled || !f.value || !f.value.trim()) return false;
@@ -76,12 +112,22 @@ function buildRules(data) {
     });
 
     if (enabledFilters.length === 0) {
-      rules.push({
-        id: ruleId++,
-        priority: 1,
-        action,
-        condition: { resourceTypes: ALL_RESOURCE_TYPES }
-      });
+      if (hasHeaders) {
+        rules.push({
+          id: ruleId++,
+          priority: 1,
+          action: headerAction,
+          condition: { resourceTypes: ALL_RESOURCE_TYPES }
+        });
+      }
+      if (paramAction) {
+        rules.push({
+          id: ruleId++,
+          priority: 1,
+          action: paramAction,
+          condition: { resourceTypes: ALL_RESOURCE_TYPES }
+        });
+      }
     } else {
       for (const filter of enabledFilters) {
         if (ruleId > 4999) break;
@@ -91,7 +137,12 @@ function buildRules(data) {
         } else {
           condition.urlFilter = filter.value.trim();
         }
-        rules.push({ id: ruleId++, priority: 1, action, condition });
+        if (hasHeaders) {
+          rules.push({ id: ruleId++, priority: 1, action: headerAction, condition });
+        }
+        if (paramAction && ruleId <= 4999) {
+          rules.push({ id: ruleId++, priority: 1, action: paramAction, condition });
+        }
       }
     }
   }

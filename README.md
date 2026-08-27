@@ -1,6 +1,6 @@
 # ModHeader
 
-一个轻量级的 Chrome 和 Firefox 浏览器扩展（Manifest V3），用于便捷地修改 HTTP 请求和响应头。支持多 Profile、URL 过滤器以及多种 Header 操作方式。
+一个轻量级的 Chrome 和 Firefox 浏览器扩展（Manifest V3），用于便捷地修改 HTTP 请求和响应头，以及覆盖 URL 查询参数。支持多 Profile、URL 过滤器以及多种操作方式。
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)
 ![Firefox Extension](https://img.shields.io/badge/Firefox-Extension-orange)
@@ -10,8 +10,9 @@
 
 - **多 Profile 管理** — 创建多个独立的 Header 配置，随时切换、复制或删除
 - **请求 / 响应 Header 编辑** — 分别管理 Request 和 Response Header，支持 `Set`、`Append`、`Remove` 三种操作
+- **URL 查询参数覆盖** — 修改请求 URL 上的查询参数，支持 `Set`（添加或替换）、`Replace`（仅替换已存在的参数）、`Remove`（删除参数）三种操作
 - **URL 过滤器** — 通过通配符或正则表达式精确控制规则生效范围，留空则对所有 URL 生效
-- **逐条开关** — 全局、Profile、单条 Header 三个层级的启用/禁用控制
+- **逐条开关** — 全局、Profile、单条规则三个层级的启用/禁用控制
 - **导出 / 导入** — 将所有 Profile 导出为 JSON 文件，或从文件导入
 - **标签页全屏编辑** — 弹窗底部提供「Open in tab」按钮，可在新标签页中编辑 Profile，布局自适应
 - **实时规则统计** — Header 栏显示当前生效的规则数量
@@ -60,6 +61,17 @@ node build.js
    - **Append** — 追加 Header 值
    - **Remove** — 移除指定 Header
 4. 通过左侧开关单独控制每条 Header 的启用状态
+
+### URL 查询参数覆盖
+
+在 **Params** 标签页中修改请求 URL 上的查询参数：
+
+1. 选择目标 Profile，点击 **Add Query Param** 添加参数
+2. 填写参数名和值，选择操作类型：
+   - **Set** - 参数存在则替换，不存在则添加
+   - **Replace** - 仅当参数已存在时替换，不存在则忽略
+   - **Remove** - 删除该参数的所有出现
+3. 参数名和值需为 ASCII，且不能包含空格、`&` 或 `#`
 
 ### URL 过滤器
 
