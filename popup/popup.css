@@ -535,6 +535,47 @@ body {
   background: rgba(245, 158, 11, 0.08) !important;
 }
 
+/* ─── Header name autocomplete ────────────── */
+.header-autocomplete {
+  position: fixed;
+  z-index: 900;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 3px;
+}
+
+.header-autocomplete-item {
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.header-autocomplete-item .ac-match {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.header-autocomplete-item.active,
+.header-autocomplete-item:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.header-autocomplete-item.active .ac-match,
+.header-autocomplete-item:hover .ac-match {
+  color: #fff;
+}
+
 .select-op {
   flex: 0 0 76px;
   background: var(--surface);

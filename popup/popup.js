@@ -1,3 +1,28 @@
+// ─── Common headers for name autocomplete ──────────────────────────────────
+const COMMON_HEADERS = {
+  requestHeaders: [
+    'Accept', 'Accept-Encoding', 'Accept-Language', 'Access-Control-Request-Headers',
+    'Access-Control-Request-Method', 'Authorization', 'Cache-Control', 'Connection',
+    'Content-Type', 'Cookie', 'DNT', 'If-Match', 'If-Modified-Since', 'If-None-Match',
+    'If-Range', 'If-Unmodified-Since', 'Origin', 'Pragma', 'Range', 'Referer',
+    'Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'User-Agent', 'Via',
+    'X-Api-Key', 'X-Auth-Token', 'X-Correlation-ID', 'X-CSRF-Token', 'X-Forwarded-For',
+    'X-Forwarded-Host', 'X-Forwarded-Proto', 'X-Real-IP', 'X-Requested-With', 'X-Request-ID'
+  ],
+  responseHeaders: [
+    'Access-Control-Allow-Credentials', 'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods', 'Access-Control-Allow-Origin',
+    'Access-Control-Expose-Headers', 'Access-Control-Max-Age', 'Age', 'Allow',
+    'Cache-Control', 'Content-Disposition', 'Content-Encoding', 'Content-Language',
+    'Content-Location', 'Content-Range', 'Content-Security-Policy', 'Content-Type',
+    'Date', 'ETag', 'Expires', 'Last-Modified', 'Location', 'Permissions-Policy',
+    'Pragma', 'Referrer-Policy', 'Retry-After', 'Server', 'Set-Cookie',
+    'Strict-Transport-Security', 'Vary', 'WWW-Authenticate', 'X-Content-Type-Options',
+    'X-Frame-Options', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Request-ID',
+    'X-XSS-Protection'
+  ]
+};
+
 // ─── State ─────────────────────────────────────────────────────────────────
 let data = null;
 let activeSection = 'requestHeaders';
@@ -522,6 +547,148 @@ function renderSection() {
   else if (activeSection === 'urlFilters') renderUrlFilters();
 }
 
+// ─── Header name autocomplete ────────────────────────────────────────────────
+// Only one dropdown can be open at a time; keep a module-level closer so global
+// listeners (scroll) can dismiss it regardless of which row owns it.
+let _closeAutocomplete = null;
+
+// The dropdown is position:fixed — any scroll would detach it from its input.
+document.addEventListener('scroll', () => {
+  if (_closeAutocomplete) _closeAutocomplete();
+}, true);
+
+function attachHeaderAutocomplete(input, type, nextInput) {
+  const suggestions = COMMON_HEADERS[type] || [];
+  if (suggestions.length === 0) return;
+
+  let dropdown = null;
+  let matches = [];
+  let activeIdx = -1;
+
+  function closeDropdown() {
+    if (dropdown) {
+      dropdown.remove();
+      dropdown = null;
+      matches = [];
+      activeIdx = -1;
+    }
+    if (_closeAutocomplete === closeDropdown) _closeAutocomplete = null;
+  }
+
+  function getMatches() {
+    const q = input.value.trim().toLowerCase();
+    if (!q) return suggestions;
+    // Prefix matches first, then substring matches
+    const prefix = [], substr = [];
+    for (const name of suggestions) {
+      const lower = name.toLowerCase();
+      if (lower === q) continue; // already fully typed — nothing to suggest
+      if (lower.startsWith(q)) prefix.push(name);
+      else if (lower.includes(q)) substr.push(name);
+    }
+    return prefix.concat(substr);
+  }
+
+  function positionDropdown() {
+    if (!dropdown) return;
+    const rect = input.getBoundingClientRect();
+    const maxH = 180;
+    dropdown.style.minWidth = rect.width + 'px';
+    dropdown.style.left = rect.left + 'px';
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < maxH + 8 && rect.top > spaceBelow) {
+      dropdown.style.top = '';
+      dropdown.style.bottom = (window.innerHeight - rect.top + 2) + 'px';
+    } else {
+      dropdown.style.bottom = '';
+      dropdown.style.top = (rect.bottom + 2) + 'px';
+    }
+  }
+
+  function renderDropdown() {
+    matches = getMatches();
+    if (matches.length === 0) { closeDropdown(); return; }
+
+    if (!dropdown) {
+      dropdown = document.createElement('div');
+      dropdown.className = 'header-autocomplete';
+      document.body.appendChild(dropdown);
+      _closeAutocomplete = closeDropdown;
+    }
+    dropdown.innerHTML = '';
+
+    const q = input.value.trim().toLowerCase();
+    matches.forEach((name, i) => {
+      const item = document.createElement('div');
+      item.className = 'header-autocomplete-item' + (i === activeIdx ? ' active' : '');
+      const idx = q ? name.toLowerCase().indexOf(q) : -1;
+      if (idx >= 0) {
+        item.innerHTML = escHtml(name.slice(0, idx)) +
+          '<span class="ac-match">' + escHtml(name.slice(idx, idx + q.length)) + '</span>' +
+          escHtml(name.slice(idx + q.length));
+      } else {
+        item.textContent = name;
+      }
+      // mousedown (not click) so it fires before the input's blur closes the list
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        commit(name);
+      });
+      dropdown.appendChild(item);
+    });
+
+    positionDropdown();
+  }
+
+  function setActive(idx) {
+    activeIdx = idx;
+    const items = dropdown.querySelectorAll('.header-autocomplete-item');
+    items.forEach((el, i) => el.classList.toggle('active', i === idx));
+    if (idx >= 0 && items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  function commit(name) {
+    input.value = name;
+    // Reuse the row's existing input handler (updates data, validates, saves)
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    closeDropdown();
+  }
+
+  input.addEventListener('focus', renderDropdown);
+  input.addEventListener('input', () => { activeIdx = -1; renderDropdown(); });
+  input.addEventListener('blur', () => {
+    // Delay so an item's mousedown fires before the list is torn down
+    setTimeout(closeDropdown, 120);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (!dropdown) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); renderDropdown(); }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive(Math.min(activeIdx + 1, matches.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(Math.max(activeIdx - 1, 0));
+    } else if (e.key === 'Enter') {
+      if (activeIdx >= 0 && matches[activeIdx]) {
+        e.preventDefault();
+        commit(matches[activeIdx]);
+        if (nextInput && !nextInput.disabled) nextInput.focus();
+      } else {
+        closeDropdown();
+      }
+    } else if (e.key === 'Tab') {
+      if (activeIdx >= 0 && matches[activeIdx]) commit(matches[activeIdx]);
+      closeDropdown();
+    } else if (e.key === 'Escape') {
+      e.stopPropagation();
+      closeDropdown();
+    }
+  });
+}
+
 // ─── Header list ─────────────────────────────────────────────────────────────
 function renderHeaderList(type) {
   const profile = getActiveProfile();
@@ -571,6 +738,8 @@ function buildHeaderRow(type, header) {
   nameInput.className = 'input-name';
   nameInput.placeholder = 'Header name';
   nameInput.value = header.name;
+  nameInput.autocomplete = 'off';
+  nameInput.spellcheck = false;
 
   function validateName(val) {
     const trimmed = val.trim();
@@ -616,6 +785,9 @@ function buildHeaderRow(type, header) {
     validateValue(valueInput.value);
     debounceSave();
   });
+
+  // Common header name suggestions; Enter on a suggestion moves to the value field
+  attachHeaderAutocomplete(nameInput, type, valueInput);
 
   // Operation select
   const opSelect = document.createElement('select');
